@@ -93,7 +93,8 @@ Append to /home/user/career-ops/data/scan-history.tsv (tab-separated):
 
 ## STEP 7 — GIT COMMIT AND PUSH
 
-The cloud runner has GitHub auth built in — no PAT needed:
+The cloud runner has GitHub auth built in — no PAT needed.
+Push to a dedicated branch (avoids branch protection on main):
 
 ```bash
 cd /home/user/career-ops
@@ -102,10 +103,16 @@ git config user.name "career-ops-bot"
 git add data/pipeline.md data/scan-history.tsv
 git diff --cached --stat
 git commit -m "chore: {N} new job leads - {TODAY}" || echo "nothing to commit"
-git push origin HEAD:main
+git push origin HEAD:pipeline-updates --force
 ```
 
-If push fails: report the error in output and continue to Step 8.
+PUSH_BRANCH = "pipeline-updates"
+
+If push fails with 403: try `git push origin HEAD:pipeline-updates --force` once more.
+If still fails: try `git push origin HEAD:refs/heads/pipeline-updates --force`.
+If all push attempts fail: set PUSH_BRANCH = null, report error, continue to Step 8 with a note in the email.
+
+On success: note PUSH_URL = {GITHUB_REPO}/compare/pipeline-updates (link to compare/merge).
 
 ## STEP 8 — BUILD EMAIL DIGEST
 
@@ -133,6 +140,18 @@ SOCIAL SIGNALS ({count}):
 Total: {X} local | {Y} remote | {Z} social
 Next: git pull then /career-ops pipeline to evaluate
 ========================================
+
+If PUSH_BRANCH is set:
+  Include at bottom:
+  ----------------------------------------
+  To sync locally:
+    git fetch origin && git merge origin/pipeline-updates
+    /career-ops pipeline
+  Or view on GitHub: {PUSH_URL}
+  ----------------------------------------
+
+If PUSH_BRANCH is null (push failed):
+  Note: "Push to GitHub failed. Run /career-ops scan locally to discover these leads."
 
 If N=0: "No new leads since last check. Pipeline is up to date."
 
