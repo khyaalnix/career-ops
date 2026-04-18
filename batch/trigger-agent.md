@@ -91,7 +91,7 @@ Run these bash commands (the remote URL includes auth):
 cd /repo
 git config user.email "nikhil.kumar707128@gmail.com"
 git config user.name "career-ops-bot"
-git remote set-url origin https://GITHUB_PAT@github.com/khyaalnix/career-ops.git
+git remote set-url origin https://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@github.com/khyaalnix/career-ops.git
 git add data/pipeline.md data/scan-history.tsv
 git diff --cached --stat
 git commit -m "chore: {N} new job leads - {TODAY}"
