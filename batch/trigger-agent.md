@@ -85,21 +85,19 @@ Append to /home/user/career-ops/data/scan-history.tsv (tab-separated columns):
 
 ## STEP 6 — GIT COMMIT AND PUSH
 
-Run these bash commands (the remote URL includes auth):
+Run these bash commands. The cloud runner has GitHub auth built in — no PAT needed:
 
 ```bash
 cd /home/user/career-ops
 git config user.email "nikhil.kumar707128@gmail.com"
 git config user.name "career-ops-bot"
-git remote set-url origin https://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@github.com/khyaalnix/career-ops.git
 git add data/pipeline.md data/scan-history.tsv
 git diff --cached --stat
-git commit -m "chore: {N} new job leads - {TODAY}"
-git push origin main
+git commit -m "chore: {N} new job leads - {TODAY}" || echo "nothing to commit"
+git push origin HEAD:main
 ```
 
-NOTE: Replace GITHUB_PAT with the actual token before running.
-If push fails with auth error: report it in output but continue to Step 7.
+If push fails: report the error in output but continue to Step 7.
 
 ## STEP 7 — BUILD EMAIL DIGEST
 
