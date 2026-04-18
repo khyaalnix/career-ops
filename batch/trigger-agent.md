@@ -1,95 +1,103 @@
-# career-ops trigger agent instructions
-# Runs every 3h in Anthropic cloud. Repo cloned at /repo.
-# DO NOT commit secrets here — PAT is set via git remote in Step 6.
+# career-ops trigger agent
+# Runs on schedule in Anthropic cloud. Repo cloned at /home/user/career-ops.
+# All candidate config is read from config/profile.yml — nothing is hardcoded here.
+# To customize: edit config/profile.yml and portals.yml, then git push.
 
-## WHO YOU ARE
-career-ops-bot: automated job discovery for Nikhil Kumar (Senior Data Engineer, Bangalore, India).
-Target: Senior Data Engineer, Staff Data Engineer, AI Platform Engineer, ML Engineer, SDE-2, LLMOps/MLOps, GenAI Engineer.
-Stack: Kafka, Flink, Spark, BigQuery, GCP, AWS, LangGraph, RAG, voice AI.
-Comp min: 22 LPA INR. Location: Bangalore preferred, open to remote globally.
+## STEP 1 — READ CANDIDATE PROFILE
 
-## STEP 1 — READ EXISTING STATE
+Read /home/user/career-ops/config/profile.yml. Extract:
+
+- NAME        = candidate.full_name
+- EMAIL       = candidate.email
+- CITY        = location.city
+- COUNTRY     = location.country
+- ROLES       = target_roles.primary (list of role titles)
+- STACK       = skills.stack_keywords (if present) OR narrative.superpowers
+- DIGEST_TO   = trigger.digest_to (falls back to candidate.email)
+- RECENCY     = trigger.recency_days (default: 3 if not set)
+- GITHUB_REPO = trigger.github_repo
+
+Read /home/user/career-ops/portals.yml. Extract:
+- search_queries: list of {name, query, enabled} objects
+- exa_config: {recency_days, location_preference, exa_queries} if present
+
+## STEP 2 — READ EXISTING STATE (dedup)
+
 Read /home/user/career-ops/data/pipeline.md and /home/user/career-ops/data/scan-history.tsv.
-Build dedup set: all URLs already present in either file. Also collect company+role pairs from pipeline.md.
+Build dedup set: all URLs already present in either file. Collect company+role pairs from pipeline.md to avoid re-adding evaluated roles.
 
-## STEP 2 — DATE WINDOW
-TODAY = current date (YYYY-MM-DD). CUTOFF = TODAY minus 3 days.
+## STEP 3 — DATE WINDOW
 
-## STEP 3 — RUN 34 SEARCHES (parallel batches, append after:CUTOFF to each)
+TODAY = current date (YYYY-MM-DD).
+CUTOFF = TODAY minus RECENCY days.
 
-### INDIA BOARDS
-Q01: site:naukri.com "Senior Data Engineer" OR "Data Platform Engineer" Bangalore after:CUTOFF
-Q02: site:naukri.com "AI Engineer" OR "ML Engineer" OR "GenAI Engineer" Bangalore after:CUTOFF
-Q03: site:naukri.com "SDE-2" OR "SDE2" OR "Software Engineer II" Bangalore after:CUTOFF
-Q04: site:naukri.com "Kafka" OR "Flink" OR "Spark" data engineer Bangalore after:CUTOFF
-Q05: site:linkedin.com/jobs "Senior Data Engineer" OR "Data Platform" Bangalore India after:CUTOFF
-Q06: site:linkedin.com/jobs "AI Engineer" OR "ML Engineer" OR "LLMOps" Bangalore India after:CUTOFF
-Q07: site:instahyre.com "Data Engineer" OR "AI Engineer" OR "Backend Engineer" Bangalore after:CUTOFF
-Q08: site:cutshort.io "Data Engineer" OR "AI Engineer" OR "Machine Learning" Bangalore after:CUTOFF
-Q09: site:hirist.tech "Data Engineer" OR "AI Engineer" OR "Kafka" OR "Flink" Bangalore after:CUTOFF
-Q10: site:iimjobs.com "Senior Data Engineer" OR "AI Platform" OR "ML Engineer" Bangalore after:CUTOFF
-Q11: site:wellfound.com "Data Engineer" OR "AI Engineer" India Bangalore after:CUTOFF
-Q12: site:in.indeed.com "Senior Data Engineer" OR "AI Engineer" Bangalore after:CUTOFF
-Q13: site:foundit.in "Data Engineer" OR "AI Engineer" OR "ML Engineer" Bangalore after:CUTOFF
-Q14: site:shine.com "Senior Data Engineer" OR "AI Engineer" Bangalore after:CUTOFF
-Q15: site:timesjobs.com "Data Engineer" OR "AI Engineer" Bangalore after:CUTOFF
+## STEP 4 — RUN SEARCHES
 
-### INDIA UNICORNS
-Q16: "Razorpay" OR "PhonePe" OR "CRED" OR "Meesho" OR "Swiggy" OR "Zepto" "data engineer" OR "AI engineer" Bangalore jobs 2026
-Q17: "Sarvam AI" OR "Yellow.ai" OR "Haptik" OR "MoEngage" OR "Freshworks" OR "Postman" "data engineer" OR "ML engineer" Bangalore 2026
-Q18: "Atlassian" OR "BrowserStack" OR "GOJEK" OR "Urban Company" "data engineer" OR "AI engineer" Bangalore 2026
+### 4a. Exa MCP (if available — highest priority, freshest results)
 
-### STARTUP ATS
-Q19: site:jobs.ashbyhq.com "Data Engineer" OR "AI Engineer" OR "ML Engineer" OR "LLMOps" after:CUTOFF
-Q20: site:jobs.ashbyhq.com "Backend Engineer" OR "Platform Engineer" OR "Data Platform" remote after:CUTOFF
-Q21: site:job-boards.greenhouse.io "Data Engineer" OR "AI Engineer" OR "ML Engineer" India OR remote after:CUTOFF
-Q22: site:jobs.lever.co "Data Engineer" OR "AI Engineer" OR "ML Engineer" India OR Bangalore OR remote after:CUTOFF
-Q23: site:apply.workable.com "Data Engineer" OR "AI Engineer" India OR remote after:CUTOFF
-Q24: site:himalayas.app "Data Engineer" OR "AI Engineer" OR "ML Engineer" OR "LLMOps" after:CUTOFF
-Q25: site:wellfound.com "Data Engineer" OR "AI Engineer" OR "LLMOps" remote after:CUTOFF
+Check if Exa MCP tools are available (look for tools with "exa" or "web_search_exa" in the name).
 
-### REMOTE AND AI-SPECIALIST
-Q26: site:remoteok.com "Data Engineer" OR "AI Engineer" OR "ML Engineer" OR "LLMOps" after:CUTOFF
-Q27: site:weworkremotely.com "Data Engineer" OR "AI Engineer" OR "Backend Engineer" after:CUTOFF
-Q28: site:ai-jobs.net "Data Engineer" OR "AI Engineer" OR "LLMOps" India OR remote after:CUTOFF
-Q29: site:ycombinator.com/jobs "Data Engineer" OR "AI Engineer" OR "ML Engineer" remote after:CUTOFF
+If available: for each query in exa_config.exa_queries, run an Exa search with:
+- query: the query string
+- numResults: 20
+- startPublishedDate: CUTOFF in ISO format
+- includeDomains: exa_config.domains if set
 
-### SOCIAL SIGNALS
-Q30: site:x.com "hiring" "data engineer" OR "AI engineer" OR "ML engineer" Bangalore OR India 2026
-Q31: site:x.com "referral" OR "refer" "data engineer" OR "AI engineer" Bangalore India 2026
-Q32: site:x.com "DM" "hiring" "data engineer" OR "ML engineer" Bangalore India 2026
-Q33: site:linkedin.com/posts "hiring" "data engineer" OR "AI engineer" Bangalore India 2026
-Q34: site:linkedin.com/posts "referral" "data engineer" Bangalore India 2026
+If Exa not available: skip to 4b.
 
-## STEP 4 — FILTER AND SCORE
+### 4b. WebSearch queries from portals.yml
 
-KEEP if title contains any: Data Engineer, AI Engineer, ML Engineer, Machine Learning, LLMOps, MLOps, GenAI, Data Platform, Platform Engineer, SDE-2, SDE2, Software Engineer II, AI Infrastructure, Streaming Engineer, AI Platform, Analytics Engineer
+For each query in search_queries where enabled=true:
+- Append "after:CUTOFF" to the query string
+- Run WebSearch
+- Collect all results: {title, url, company, snippet}
 
-SKIP if title contains any: Junior, Intern, .NET, iOS, Android, PHP, Ruby, Blockchain, Web3, Crypto
+Run in parallel batches of 5-8 queries at a time.
+
+### 4c. Fallback: generate queries dynamically
+
+If portals.yml has no search_queries, generate them from the profile:
+
+For each role in ROLES, for each location in [CITY, COUNTRY, "remote"]:
+  Query: site:linkedin.com/jobs "{role}" {location} after:CUTOFF
+  Query: site:jobs.ashbyhq.com "{role}" after:CUTOFF
+  Query: site:job-boards.greenhouse.io "{role}" {location} OR remote after:CUTOFF
+  Query: site:jobs.lever.co "{role}" {location} OR remote after:CUTOFF
+
+Social signals (always run):
+  Query: site:x.com "hiring" "{role}" {CITY} OR {COUNTRY} 2025 OR 2026
+  Query: site:linkedin.com/posts "hiring" "{role}" {CITY} OR {COUNTRY}
+
+## STEP 5 — FILTER AND SCORE
+
+For each result:
+
+KEEP if title contains any word from ROLES (case-insensitive partial match)
+SKIP if title contains: Junior, Intern, .NET, iOS, Android, PHP, Ruby, Blockchain, Web3, Crypto
 
 Location score:
-  3 = Bangalore / Bengaluru / India
-  2 = remote (no country restriction) / APAC remote
-  1 = EU or UK remote
-  0 = US-only or UK-only without remote option (SKIP)
+  3 = title or snippet mentions CITY or COUNTRY
+  2 = remote with no country restriction
+  1 = remote in different region
+  0 = country-locked to different country (SKIP)
 
-Dedup: skip if URL is in the dedup set from Step 1. One entry per company+role.
+Dedup: skip if URL in dedup set from Step 2. One entry per company+role.
 
-## STEP 5 — WRITE TO REPO
+## STEP 6 — WRITE TO REPO
 
-For each new offer (N total), append to /home/user/career-ops/data/pipeline.md under the "## Pending" section:
+For each new offer (N total), append to /home/user/career-ops/data/pipeline.md under "## Pending":
 - [ ] {url} | {company} | {role} | loc:{score}
 
-Append to /home/user/career-ops/data/scan-history.tsv (tab-separated columns):
-{url}	{TODAY}	{source_query}	{role}	{company}	added
+Append to /home/user/career-ops/data/scan-history.tsv (tab-separated):
+{url}	{TODAY}	{source_query_name}	{role}	{company}	added
 
-## STEP 6 — GIT COMMIT AND PUSH
+## STEP 7 — GIT COMMIT AND PUSH
 
-Run these bash commands. The cloud runner has GitHub auth built in — no PAT needed:
+The cloud runner has GitHub auth built in — no PAT needed:
 
 ```bash
 cd /home/user/career-ops
-git config user.email "nikhil.kumar707128@gmail.com"
+git config user.email "{EMAIL from profile}"
 git config user.name "career-ops-bot"
 git add data/pipeline.md data/scan-history.tsv
 git diff --cached --stat
@@ -97,43 +105,45 @@ git commit -m "chore: {N} new job leads - {TODAY}" || echo "nothing to commit"
 git push origin HEAD:main
 ```
 
-If push fails: report the error in output but continue to Step 7.
+If push fails: report the error in output and continue to Step 8.
 
-## STEP 7 — BUILD EMAIL DIGEST
+## STEP 8 — BUILD EMAIL DIGEST
 
 Format (plain text):
 
 ========================================
-career-ops digest | {TODAY} {TIME} IST
+career-ops digest | {TODAY} | {NAME}
 {N} new leads added to pipeline.md
-github.com/khyaalnix/career-ops/blob/main/data/pipeline.md
+{GITHUB_REPO}/blob/main/data/pipeline.md
 ========================================
 
-INDIA / BANGALORE ({count}):
+{CITY} / LOCAL ROLES ({count}):
 1. {Company} - {Role}
    {URL}
    {date if visible} | {source portal}
 
 GLOBAL REMOTE ({count}):
-{same format}
+...same format...
 
 SOCIAL SIGNALS ({count}):
-{handle/company}: "{snippet}"
+{handle or company}: "{snippet}"
 {URL}
 
 ----------------------------------------
-Total: {X} India | {Y} remote | {Z} social
-Next: git pull && /career-ops pipeline to evaluate
+Total: {X} local | {Y} remote | {Z} social
+Next: git pull then /career-ops pipeline to evaluate
 ========================================
 
-If N=0: write "No new leads in last 72h. Pipeline is up to date."
+If N=0: "No new leads since last check. Pipeline is up to date."
 
-## STEP 8 — SEND EMAIL VIA GMAIL MCP
+## STEP 9 — SEND EMAIL
 
-Use Gmail MCP tools to send:
-To: nikhil.kumar707128@gmail.com
-Subject: [career-ops] {N} new jobs | {TODAY} {TIME} IST
-Body: digest from Step 7
+Use Gmail MCP tools (look for tools with "gmail" or "send_email" in the name).
 
-If Gmail tools unavailable: print digest to stdout, note email not sent.
-Confirm with message ID.
+If available:
+- To: DIGEST_TO
+- Subject: [career-ops] {N} new jobs | {TODAY}
+- Body: digest from Step 8
+- Confirm with message ID
+
+If Gmail unavailable: print digest to stdout, note email not sent.

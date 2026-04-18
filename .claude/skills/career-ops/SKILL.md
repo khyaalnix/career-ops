@@ -28,6 +28,7 @@ Determine the mode from `{{mode}}`:
 | `scan` | `scan` |
 | `batch` | `batch` |
 | `email-digest` | `email-digest` |
+| `setup` | delegate to `career-ops-setup` skill |
 
 **Auto-pipeline detection:** If `{{mode}}` is not a known sub-command AND contains JD text (keywords: "responsibilities", "requirements", "qualifications", "about the role", "we're looking for", company name + role) or a URL to a JD, execute `auto-pipeline`.
 
@@ -55,8 +56,9 @@ Available commands:
   /career-ops tracker   → Application status overview
   /career-ops apply     → Live application assistant (reads form + generates answers)
   /career-ops scan          → Scan portals and discover new offers (India-first, last 3 days)
-  /career-ops email-digest  → Scan + email job links to nikhil.kumar707128@gmail.com
+  /career-ops email-digest  → Scan + email job links to your digest address
   /career-ops batch         → Batch processing with parallel workers
+  /career-ops setup         → First-time setup: paste CV → personalized pipeline + auto trigger
 
 Inbox: add URLs to data/pipeline.md → /career-ops pipeline
 Or paste a JD directly to run the full pipeline.

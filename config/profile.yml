@@ -85,3 +85,16 @@ location:
 
 language:
   modes_dir: "modes"   # Switch to "modes/de" for German-language roles
+
+# -- Automated trigger config --
+# Used by batch/trigger-agent.md when running as a scheduled cloud agent.
+# Set up via /career-ops-setup or manually.
+trigger:
+  digest_to: "nikhil.kumar707128@gmail.com"
+  recency_days: 3
+  github_repo: "https://github.com/khyaalnix/career-ops"
+  location_keywords:
+    - "Bangalore"
+    - "Bengaluru"
+    - "India"
+    - "remote"
