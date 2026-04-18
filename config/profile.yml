@@ -1,0 +1,87 @@
+# Career-Ops Profile Configuration
+# Nikhil Kumar — Senior Data Engineer & AI/ML Systems Builder
+
+candidate:
+  full_name: "Nikhil Kumar"
+  email: "nikhil.kumar707128@gmail.com"
+  phone: "9523120037"
+  location: "Bangalore, India"
+  linkedin: "linkedin.com/in/nikhill-kumarr"
+  github: "github.com/khyaalnix"
+  portfolio_url: ""
+  twitter: ""
+
+target_roles:
+  primary:
+    - "Senior Data Engineer"
+    - "Staff Data Engineer"
+    - "AI Platform Engineer"
+    - "Data Platform Engineer"
+    - "AI Infrastructure Engineer"
+    - "Senior ML Engineer"
+    - "SDE-2"
+    - "SDE2"
+    - "Software Development Engineer II"
+    - "Software Engineer II"
+  archetypes:
+    - name: "Data Platform / Senior Data Engineer"
+      level: "Senior/Staff"
+      fit: "primary"
+    - name: "AI/ML Engineer"
+      level: "Senior/SDE-2+"
+      fit: "primary"
+    - name: "AI Platform / LLMOps Engineer"
+      level: "Senior/SDE-2+"
+      fit: "primary"
+    - name: "SDE-2 / Software Engineer II"
+      level: "SDE-2 and above"
+      fit: "primary"
+    - name: "Agentic AI / Distributed Systems Engineer"
+      level: "Senior/Staff"
+      fit: "secondary"
+    - name: "Backend / Infrastructure Engineer"
+      level: "SDE-2+"
+      fit: "secondary"
+
+narrative:
+  headline: "Senior Data Engineer & AI Systems Builder — Kafka, Flink, LangGraph, GCP/AWS at PB scale"
+  exit_story: >
+    Founding team member at Khyaal where I built a full-stack AI + data platform from scratch.
+    Architected Pulse, a CDP + Agent ecosystem processing PB-scale data for 1M+ users.
+    Before that, shipped enterprise ML at Vue.ai (MadStreetDen) for $250M+ clients.
+    Now looking for a Staff/Senior role where I can drive data platform or AI infrastructure at scale.
+  superpowers:
+    - "End-to-end data platform architecture (ingestion → streaming → ML → AI agents)"
+    - "Real-time streaming systems — Kafka + Flink at 10M+ events/day with exactly-once semantics"
+    - "Production AI/agent systems — LangGraph, RAG, voice AI, agent orchestration at scale"
+    - "Multi-cloud infrastructure — GCP + AWS, Kubernetes, Terraform, zero-downtime migrations"
+    - "Founding-team mindset — built 0→1, hired a team, shipped 380+ commits with zero critical incidents"
+  proof_points:
+    - name: "Real-Time Journey Engine (Khyaal)"
+      hero_metric: "100K events/day, <80ms p99, exactly-once via PyFlink + Kafka"
+    - name: "AI Voice Sales Engine (Khyaal)"
+      hero_metric: "500+ qualified leads/week at 68% lower cost, <80ms p95 latency"
+    - name: "CDP Data Platform (Khyaal)"
+      hero_metric: "Replaced Mixpanel, saved $42K/year, 5x query performance improvement"
+    - name: "Agent Orchestration Framework (Khyaal)"
+      hero_metric: "50+ concurrent agents, 5K+ AI tasks/day, 70% operational overhead reduction"
+    - name: "OTS Engine (Vue.ai / MadStreetDen)"
+      hero_metric: "808-feature ensemble, 30% YoY collection increase, $10M revenue uplift"
+    - name: "Fraud Reduction ML (Vue.ai)"
+      hero_metric: "42% fraud claim reduction for $250M+ logistics client"
+
+compensation:
+  target_range: "35-55 LPA"
+  currency: "INR"
+  minimum: "22 LPA"   # SDE-2+ roles acceptable if comp >22 LPA
+  location_flexibility: "Bangalore preferred; open to remote; hybrid negotiable"
+
+location:
+  country: "India"
+  city: "Bangalore"
+  timezone: "IST (UTC+5:30)"
+  visa_status: "Indian citizen, no sponsorship needed for India roles"
+  onsite_availability: "Flexible — prefer hybrid or remote"
+
+language:
+  modes_dir: "modes"   # Switch to "modes/de" for German-language roles

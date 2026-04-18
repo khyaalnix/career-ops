@@ -1,7 +1,18 @@
-# Personal data (user fills these)
-data/applications.md
-data/pipeline.md
-data/scan-history.tsv
+# ============================================================
+# SECRETS — never commit
+# ============================================================
+.env
+*.env.local
+
+# ============================================================
+# DATA FILES — tracked in personal fork for remote trigger sync
+# (pipeline.md + scan-history.tsv must be committed so the
+#  remote trigger can read them for dedup and write new entries)
+# ============================================================
+# data/applications.md   ← tracked (application tracker)
+# data/pipeline.md       ← tracked (trigger writes here)
+# data/scan-history.tsv  ← tracked (dedup history)
+
 reports/*.md
 !reports/.gitkeep
 output/*
@@ -15,23 +26,23 @@ batch/tracker-additions/*.tsv
 jds/*
 !jds/.gitkeep
 
-# User config and customization (never auto-updated)
-config/profile.yml
-portals.yml
-modes/_profile.md
+# ============================================================
+# USER CONFIG — committed in personal fork (customized for Nikhil)
+# ============================================================
+# config/profile.yml     ← tracked
+# portals.yml            ← tracked (India companies + queries)
+# modes/_profile.md      ← tracked
 .update-dismissed
 .update-lock
 
-# Generated
+# ============================================================
+# Generated / local
+# ============================================================
 .resolved-prompt-*
 node_modules/
-
-# OS
 .DS_Store
 *.mov
 *.mp4
-
-# Claude Code local
 .claude/settings.local.json
 .claude/memory/
 career-dashboard

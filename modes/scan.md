@@ -1,172 +1,201 @@
-# Modo: scan — Portal Scanner (Descubrimiento de Ofertas)
+# Mode: scan — Portal Scanner (Offer Discovery)
 
-Escanea portales de empleo configurados, filtra por relevancia de título, y añade nuevas ofertas al pipeline para evaluación posterior.
+Scans configured job portals, filters by title relevance + India location + recency, and adds new offers to the pipeline for evaluation.
 
-## Ejecución recomendada
+## Recommended execution
 
-Ejecutar como subagente para no consumir contexto del main:
+Run as subagent to avoid consuming main context:
 
 ```
 Agent(
     subagent_type="general-purpose",
-    prompt="[contenido de este archivo + datos específicos]",
+    prompt="[content of this file + specific data]",
     run_in_background=True
 )
 ```
 
-## Configuración
+## Configuration
 
-Leer `portals.yml` que contiene:
-- `search_queries`: Lista de queries WebSearch con `site:` filters por portal (descubrimiento amplio)
-- `tracked_companies`: Empresas específicas con `careers_url` para navegación directa
-- `title_filter`: Keywords positive/negative/seniority_boost para filtrado de títulos
+Read `portals.yml` which contains:
+- `exa_config`: Exa MCP settings — recency, location preference, domains, queries
+- `search_queries`: WebSearch queries with `site:` filters per portal
+- `tracked_companies`: Specific companies with `careers_url` for direct navigation
+- `title_filter`: positive/negative/seniority_boost keywords for title filtering
 
-## Estrategia de descubrimiento (3 niveles)
+## Discovery Strategy (4 levels — ALL run, results merged + deduped)
 
-### Nivel 1 — Playwright directo (PRINCIPAL)
+### Level 0 — Exa MCP (HIGHEST PRIORITY — freshest results)
 
-**Para cada empresa en `tracked_companies`:** Navegar a su `careers_url` con Playwright (`browser_navigate` + `browser_snapshot`), leer TODOS los job listings visibles, y extraer título + URL de cada uno. Este es el método más fiable porque:
-- Ve la página en tiempo real (no resultados cacheados de Google)
-- Funciona con SPAs (Ashby, Lever, Workday)
-- Detecta ofertas nuevas al instante
-- No depende de la indexación de Google
+**Use Exa MCP if available.** Exa indexes the web in near-real-time and supports date-range filtering — it finds jobs posted in the last 24h–3 days that Google hasn't indexed yet.
 
-**Cada empresa DEBE tener `careers_url` en portals.yml.** Si no la tiene, buscarla una vez, guardarla, y usar en futuros scans.
+For each query in `exa_config.exa_queries`:
+1. Call Exa search with:
+   - `query`: from `exa_config.exa_queries[n].query`
+   - `numResults`: 20
+   - `startPublishedDate`: today minus `exa_config.recency_days` days (ISO 8601)
+   - `includeDomains`: from `exa_config.domains` (job boards + social)
+   - `category`: from `exa_config.exa_queries[n].category` if available
+2. For each result extract: `{title, url, company, published_date}`
+3. **India location filter**: only keep if title/snippet contains at least one of `exa_config.location_preference` (Bangalore, Bengaluru, India, remote). If `boost_location: true`, deprioritize but don't discard remote-only roles that don't mention a country.
+4. **Recency gate**: discard results older than `recency_days` days.
+5. Add passing results to candidates list.
 
-### Nivel 2 — Greenhouse API (COMPLEMENTARIO)
+**Exa social signal queries** (category: tweet or linkedin post):
+- Search `x.com` and `linkedin.com/posts` for hiring announcements
+- Extract: company name from post context, role title, any linked job URL
+- These are leads — add to pipeline with note `[social-signal]`
 
-Para empresas con Greenhouse, la API JSON (`boards-api.greenhouse.io/v1/boards/{slug}/jobs`) devuelve datos estructurados limpios. Usar como complemento rápido de Nivel 1 — es más rápido que Playwright pero solo funciona con Greenhouse.
+### Level 1 — Direct Playwright (RELIABLE, real-time)
 
-### Nivel 3 — WebSearch queries (DESCUBRIMIENTO AMPLIO)
+**For each company in `tracked_companies`:** Navigate to `careers_url` with Playwright (`browser_navigate` + `browser_snapshot`), read ALL visible job listings, extract title + URL.
 
-Los `search_queries` con `site:` filters cubren portales de forma transversal (todos los Ashby, todos los Greenhouse, etc.). Útil para descubrir empresas NUEVAS que aún no están en `tracked_companies`, pero los resultados pueden estar desfasados.
+**Priority order within tracked_companies:**
+1. India companies (flagged in portals.yml notes as "Bangalore" / "India") — scan FIRST
+2. Remote-friendly global companies
+3. EU/DACH companies (deprioritize, only if role explicitly says "India" or "remote")
 
-**Prioridad de ejecución:**
-1. Nivel 1: Playwright → todas las `tracked_companies` con `careers_url`
-2. Nivel 2: API → todas las `tracked_companies` con `api:`
-3. Nivel 3: WebSearch → todos los `search_queries` con `enabled: true`
+Each company MUST have `careers_url`. If missing, find it once, save it, use for future scans.
 
-Los niveles son aditivos — se ejecutan todos, los resultados se mezclan y deduplicar.
+### Level 2 — Greenhouse API (FAST, structured)
 
-## Workflow
+For companies with `api:` in portals.yml: WebFetch the API URL → JSON with job list. Faster than Playwright. Use as complement to Level 1, not replacement.
 
-1. **Leer configuración**: `portals.yml`
-2. **Leer historial**: `data/scan-history.tsv` → URLs ya vistas
-3. **Leer dedup sources**: `data/applications.md` + `data/pipeline.md`
+### Level 3 — WebSearch queries (BROAD discovery)
 
-4. **Nivel 1 — Playwright scan** (paralelo en batches de 3-5):
-   Para cada empresa en `tracked_companies` con `enabled: true` y `careers_url` definida:
-   a. `browser_navigate` a la `careers_url`
-   b. `browser_snapshot` para leer todos los job listings
-   c. Si la página tiene filtros/departamentos, navegar las secciones relevantes
-   d. Para cada job listing extraer: `{title, url, company}`
-   e. Si la página pagina resultados, navegar páginas adicionales
-   f. Acumular en lista de candidatos
-   g. Si `careers_url` falla (404, redirect), intentar `scan_query` como fallback y anotar para actualizar la URL
+For each query in `search_queries` with `enabled: true`:
+- Run WebSearch
+- Extract `{title, url, company}` from results
+- **India queries run first** — queries with "Bangalore", "India", "naukri.com", "linkedin.com/jobs" etc.
 
-5. **Nivel 2 — Greenhouse APIs** (paralelo):
-   Para cada empresa en `tracked_companies` con `api:` definida y `enabled: true`:
-   a. WebFetch de la URL de API → JSON con lista de jobs
-   b. Para cada job extraer: `{title, url, company}`
-   c. Acumular en lista de candidatos (dedup con Nivel 1)
+**Priority within search_queries:**
+1. India job board queries (naukri, instahyre, cutshort, hirist, iimjobs, foundit, in.indeed.com)
+2. LinkedIn India queries
+3. Social signal queries (x.com, linkedin.com/posts)
+4. Global ATS queries (Greenhouse, Ashby, Lever)
 
-6. **Nivel 3 — WebSearch queries** (paralelo si posible):
-   Para cada query en `search_queries` con `enabled: true`:
-   a. Ejecutar WebSearch con el `query` definido
-   b. De cada resultado extraer: `{title, url, company}`
-      - **title**: del título del resultado (antes del " @ " o " | ")
-      - **url**: URL del resultado
-      - **company**: después del " @ " en el título, o extraer del dominio/path
-   c. Acumular en lista de candidatos (dedup con Nivel 1+2)
+## Location Filtering
 
-6. **Filtrar por título** usando `title_filter` de `portals.yml`:
-   - Al menos 1 keyword de `positive` debe aparecer en el título (case-insensitive)
-   - 0 keywords de `negative` deben aparecer
-   - `seniority_boost` keywords dan prioridad pero no son obligatorios
+**India-first policy:**
+- **Tier 1 (KEEP, priority)**: Bangalore / Bengaluru / India / remote (global) / remote (India-friendly)
+- **Tier 2 (KEEP, lower priority)**: Hybrid India, APAC remote
+- **Tier 3 (SKIP by default)**: US-only, UK-only, EU-only with no remote option
+- **Exception**: If a global company has a role that says "remote" without country restriction, keep it — Nikhil can apply remotely.
 
-7. **Deduplicar** contra 3 fuentes:
-   - `scan-history.tsv` → URL exacta ya vista
-   - `applications.md` → empresa + rol normalizado ya evaluado
-   - `pipeline.md` → URL exacta ya en pendientes o procesadas
+Add location tier to each candidate: `{title, url, company, location_tier}`.
 
-8. **Para cada oferta nueva que pase filtros**:
-   a. Añadir a `pipeline.md` sección "Pendientes": `- [ ] {url} | {company} | {title}`
-   b. Registrar en `scan-history.tsv`: `{url}\t{date}\t{query_name}\t{title}\t{company}\tadded`
+## Recency Filtering
 
-9. **Ofertas filtradas por título**: registrar en `scan-history.tsv` con status `skipped_title`
-10. **Ofertas duplicadas**: registrar con status `skipped_dup`
+**Only surface jobs posted in the last 3 days** (configurable via `exa_config.recency_days`).
 
-## Extracción de título y empresa de WebSearch results
+- Exa Level 0: use `startPublishedDate` parameter directly
+- Levels 1-3: check if job posting date is visible on the page; if not visible, assume it's within range (career pages typically show active listings)
+- For WebSearch results: Google's `after:` operator can be appended — e.g., append `after:2026-04-15` to queries dynamically (calculate 3 days back from today)
+- Flag results with unknown date as `[date-unknown]` in pipeline.md
 
-Los resultados de WebSearch vienen en formato: `"Job Title @ Company"` o `"Job Title | Company"` o `"Job Title — Company"`.
+## Full Workflow
 
-Patrones de extracción por portal:
+1. **Read config**: `portals.yml`
+2. **Read history**: `data/scan-history.tsv` → already-seen URLs
+3. **Read dedup sources**: `data/applications.md` + `data/pipeline.md`
+4. **Calculate date window**: today = `{TODAY}`, cutoff = today minus `recency_days` days
+
+5. **Level 0 — Exa scan** (run first, parallel queries):
+   - For each query in `exa_config.exa_queries`: call Exa with date filter + domain filter
+   - Apply India location filter + recency gate
+   - Accumulate passing candidates
+
+6. **Level 1 — Playwright scan** (parallel in batches of 3-5, India companies first):
+   - Navigate to `careers_url`, snapshot, extract listings
+   - On failure: fallback to `scan_query` WebSearch
+
+7. **Level 2 — Greenhouse APIs** (parallel):
+   - WebFetch API URLs, extract jobs
+
+8. **Level 3 — WebSearch queries** (parallel, India queries first):
+   - Run each query with dynamic `after:{cutoff-date}` appended
+   - Extract title/url/company from results
+
+9. **Title filter** using `title_filter` from `portals.yml`:
+   - At least 1 `positive` keyword must match (case-insensitive)
+   - 0 `negative` keywords must match
+
+10. **Location filter** (apply to all levels):
+    - Tier 1/2: keep
+    - Tier 3 (US/UK/EU-only): skip → log as `skipped_location` in scan-history.tsv
+
+11. **Deduplicate** against 3 sources:
+    - `scan-history.tsv` → exact URL already seen
+    - `applications.md` → company + normalized role already evaluated
+    - `pipeline.md` → exact URL already in pending or processed
+
+12. **For each new offer that passes filters**:
+    a. Add to `pipeline.md` Pending section: `- [ ] {url} | {company} | {title} | {location_tier} | {date_hint}`
+    b. Log to `scan-history.tsv`: `{url}\t{date}\t{source}\t{title}\t{company}\tadded`
+
+13. **Skipped by title**: log with status `skipped_title`
+14. **Skipped by location**: log with status `skipped_location`
+15. **Duplicates**: log with status `skipped_dup`
+
+## Title/Company extraction from WebSearch results
+
+Results come as: `"Job Title @ Company"` or `"Job Title | Company"` or `"Job Title — Company"`.
+
 - **Ashby**: `"Senior AI PM (Remote) @ EverAI"` → title: `Senior AI PM`, company: `EverAI`
 - **Greenhouse**: `"AI Engineer at Anthropic"` → title: `AI Engineer`, company: `Anthropic`
 - **Lever**: `"Product Manager - AI @ Temporal"` → title: `Product Manager - AI`, company: `Temporal`
+- **Naukri**: `"Senior Data Engineer - Bangalore | Razorpay"` → title: `Senior Data Engineer`, company: `Razorpay`
 
-Regex genérico: `(.+?)(?:\s*[@|—–-]\s*|\s+at\s+)(.+?)$`
+Generic regex: `(.+?)(?:\s*[@|—–-]\s*|\s+at\s+)(.+?)$`
 
-## URLs privadas
+## Private / login-required URLs
 
-Si se encuentra una URL no accesible públicamente:
-1. Guardar el JD en `jds/{company}-{role-slug}.md`
-2. Añadir a pipeline.md como: `- [ ] local:jds/{company}-{role-slug}.md | {company} | {title}`
+If a URL is not publicly accessible:
+1. Save JD to `jds/{company}-{role-slug}.md`
+2. Add to pipeline.md as: `- [ ] local:jds/{company}-{role-slug}.md | {company} | {title}`
 
 ## Scan History
 
-`data/scan-history.tsv` trackea TODAS las URLs vistas:
+`data/scan-history.tsv` tracks ALL seen URLs:
 
 ```
 url	first_seen	portal	title	company	status
-https://...	2026-02-10	Ashby — AI PM	PM AI	Acme	added
-https://...	2026-02-10	Greenhouse — SA	Junior Dev	BigCo	skipped_title
-https://...	2026-02-10	Ashby — AI PM	SA AI	OldCo	skipped_dup
+https://...	2026-04-18	Exa — Data Engineer Bangalore fresh	Senior Data Engineer	Razorpay	added
+https://...	2026-04-18	Naukri — AI ML Engineer India	Junior Dev	BigCo	skipped_title
+https://...	2026-04-18	LinkedIn — Data Engineer Bangalore	SA AI	OldCo	skipped_dup
+https://...	2026-04-18	Greenhouse — AI Engineer	ML Engineer	US-only Co	skipped_location
 ```
 
-## Resumen de salida
+## Output Summary
 
 ```
-Portal Scan — {YYYY-MM-DD}
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-Queries ejecutados: N
-Ofertas encontradas: N total
-Filtradas por título: N relevantes
-Duplicadas: N (ya evaluadas o en pipeline)
-Nuevas añadidas a pipeline.md: N
+Portal Scan — {YYYY-MM-DD HH:MM IST}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Sources: Exa ({n}) + Playwright ({n}) + Greenhouse API ({n}) + WebSearch ({n})
+Recency window: last {recency_days} days
+Location filter: India / Bangalore / remote-friendly
 
-  + {company} | {title} | {query_name}
+Offers found: {N} total
+  → Title filtered: {N} relevant
+  → Location filtered: {N} India/remote
+  → Duplicates removed: {N}
+  → NEW added to pipeline.md: {N}
+
+  🇮🇳 INDIA / REMOTE
+  + {company} | {title} | {source} | {date_hint}
   ...
 
-→ Ejecuta /career-ops pipeline para evaluar las nuevas ofertas.
+  🌐 GLOBAL REMOTE (no country restriction)
+  + {company} | {title} | {source}
+  ...
+
+→ Run /career-ops pipeline to evaluate new offers.
+→ Run /career-ops email-digest to send results to email.
 ```
 
-## Gestión de careers_url
+## portals.yml maintenance
 
-Cada empresa en `tracked_companies` debe tener `careers_url` — la URL directa a su página de ofertas. Esto evita buscarlo cada vez.
-
-**Patrones conocidos por plataforma:**
-- **Ashby:** `https://jobs.ashbyhq.com/{slug}`
-- **Greenhouse:** `https://job-boards.greenhouse.io/{slug}` o `https://job-boards.eu.greenhouse.io/{slug}`
-- **Lever:** `https://jobs.lever.co/{slug}`
-- **Custom:** La URL propia de la empresa (ej: `https://openai.com/careers`)
-
-**Si `careers_url` no existe** para una empresa:
-1. Intentar el patrón de su plataforma conocida
-2. Si falla, hacer un WebSearch rápido: `"{company}" careers jobs`
-3. Navegar con Playwright para confirmar que funciona
-4. **Guardar la URL encontrada en portals.yml** para futuros scans
-
-**Si `careers_url` devuelve 404 o redirect:**
-1. Anotar en el resumen de salida
-2. Intentar scan_query como fallback
-3. Marcar para actualización manual
-
-## Mantenimiento del portals.yml
-
-- **SIEMPRE guardar `careers_url`** cuando se añade una empresa nueva
-- Añadir nuevos queries según se descubran portales o roles interesantes
-- Desactivar queries con `enabled: false` si generan demasiado ruido
-- Ajustar keywords de filtrado según evolucionen los roles target
-- Añadir empresas a `tracked_companies` cuando interese seguirlas de cerca
-- Verificar `careers_url` periódicamente — las empresas cambian de plataforma ATS
+- **ALWAYS save `careers_url`** when adding a new company
+- Add India companies when discovered — they get priority in scan order
+- Disable queries with `enabled: false` if generating too much noise
+- Adjust `exa_config.recency_days` to widen/narrow the date window
+- Periodically verify `careers_url` — companies change ATS platforms

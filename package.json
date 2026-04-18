@@ -9,6 +9,7 @@
     "merge": "node merge-tracker.mjs",
     "pdf": "node generate-pdf.mjs",
     "sync-check": "node cv-sync-check.mjs",
+    "digest": "node send-digest.mjs",
     "update:check": "node update-system.mjs check",
     "update": "node update-system.mjs apply",
     "rollback": "node update-system.mjs rollback"
@@ -22,6 +23,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "nodemailer": "^6.9.0",
     "playwright": "^1.58.1"
   }
 }
