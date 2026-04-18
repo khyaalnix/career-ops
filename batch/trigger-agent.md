@@ -9,7 +9,7 @@ Stack: Kafka, Flink, Spark, BigQuery, GCP, AWS, LangGraph, RAG, voice AI.
 Comp min: 22 LPA INR. Location: Bangalore preferred, open to remote globally.
 
 ## STEP 1 — READ EXISTING STATE
-Read /repo/data/pipeline.md and /repo/data/scan-history.tsv.
+Read /home/user/career-ops/data/pipeline.md and /home/user/career-ops/data/scan-history.tsv.
 Build dedup set: all URLs already present in either file. Also collect company+role pairs from pipeline.md.
 
 ## STEP 2 — DATE WINDOW
@@ -77,10 +77,10 @@ Dedup: skip if URL is in the dedup set from Step 1. One entry per company+role.
 
 ## STEP 5 — WRITE TO REPO
 
-For each new offer (N total), append to /repo/data/pipeline.md under the "## Pending" section:
+For each new offer (N total), append to /home/user/career-ops/data/pipeline.md under the "## Pending" section:
 - [ ] {url} | {company} | {role} | loc:{score}
 
-Append to /repo/data/scan-history.tsv (tab-separated columns):
+Append to /home/user/career-ops/data/scan-history.tsv (tab-separated columns):
 {url}	{TODAY}	{source_query}	{role}	{company}	added
 
 ## STEP 6 — GIT COMMIT AND PUSH
@@ -88,7 +88,7 @@ Append to /repo/data/scan-history.tsv (tab-separated columns):
 Run these bash commands (the remote URL includes auth):
 
 ```bash
-cd /repo
+cd /home/user/career-ops
 git config user.email "nikhil.kumar707128@gmail.com"
 git config user.name "career-ops-bot"
 git remote set-url origin https://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@github.com/khyaalnix/career-ops.git
