@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -115,11 +116,43 @@ func (m appModel) View() string {
 	return m.pipeline.View()
 }
 
+// findCareerOpsRoot walks up from dir looking for a career-ops root
+// (identified by data/applications.md or applications.md).
+func findCareerOpsRoot(dir string) string {
+	current := dir
+	for {
+		if _, err := os.Stat(filepath.Join(current, "data", "applications.md")); err == nil {
+			return current
+		}
+		if _, err := os.Stat(filepath.Join(current, "applications.md")); err == nil {
+			return current
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+	return ""
+}
+
 func main() {
-	pathFlag := flag.String("path", ".", "Path to career-ops directory")
+	pathFlag := flag.String("path", "", "Path to career-ops directory (auto-detected if not set)")
 	flag.Parse()
 
 	careerOpsPath := *pathFlag
+	if careerOpsPath == "" {
+		// Auto-detect: walk up from cwd, then from the executable's directory
+		cwd, _ := os.Getwd()
+		careerOpsPath = findCareerOpsRoot(cwd)
+		if careerOpsPath == "" {
+			exe, _ := os.Executable()
+			careerOpsPath = findCareerOpsRoot(filepath.Dir(exe))
+		}
+		if careerOpsPath == "" {
+			careerOpsPath = "."
+		}
+	}
 
 	// Load applications
 	apps := data.ParseApplications(careerOpsPath)
