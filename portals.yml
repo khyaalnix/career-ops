@@ -25,7 +25,6 @@ title_filter:
     # -- Data Engineering roles --
     - "Data Engineer"
     - "Senior Data Engineer"
-    - "Staff Data Engineer"
     - "Data Platform"
     - "Data Infrastructure"
     - "Analytics Engineer"
@@ -53,15 +52,24 @@ title_filter:
     - "Infrastructure Engineer"
     - "Distributed Systems"
     - "Software Engineer"
-    # -- Seniority-scoped --
-    - "Staff Engineer"
-    - "Principal Engineer"
+    # -- Seniority-scoped (3yr exp: SDE-2 / Senior IC, NOT Staff/Principal) --
     - "SDE-2"
     - "SDE2"
     - "Software Engineer II"
     - "Software Development Engineer II"
   negative:
-    # [CUSTOMIZE] Add keywords for roles you want to exclude
+    # Experience level — Nikhil has ~3 years, Staff/Principal typically need 7+
+    - "Staff Engineer"
+    - "Staff Data Engineer"
+    - "Principal Engineer"
+    - "Principal Data Engineer"
+    - "Principal Software"
+    - "Distinguished Engineer"
+    - "Director"
+    - "VP of"
+    - "Head of Engineering"
+    - "Engineering Manager"
+    # Role type exclusions
     - "Junior"
     - "Intern"
     - ".NET"
@@ -85,11 +93,7 @@ title_filter:
   seniority_boost:
     # These prefixes add relevance but are not required
     - "Senior"
-    - "Staff"
-    - "Principal"
     - "Lead"
-    - "Head"
-    - "Director"
 
 # -- Search queries --
 # Each query triggers a WebSearch. Use site: to filter by portal.
@@ -103,7 +107,7 @@ search_queries:
 
   # -- Naukri (India's largest) --
   - name: Naukri — Data Engineer Bangalore
-    query: 'site:naukri.com "Senior Data Engineer" OR "Data Platform Engineer" OR "Staff Data Engineer" Bangalore'
+    query: 'site:naukri.com "Senior Data Engineer" OR "Data Platform Engineer" Bangalore'
     enabled: true
 
   - name: Naukri — AI ML Engineer Bangalore
@@ -124,7 +128,7 @@ search_queries:
 
   # -- LinkedIn India --
   - name: LinkedIn Jobs — Data Engineer Bangalore
-    query: 'site:linkedin.com/jobs "Senior Data Engineer" OR "Staff Data Engineer" OR "Data Platform Engineer" Bangalore India'
+    query: 'site:linkedin.com/jobs "Senior Data Engineer" OR "Data Platform Engineer" Bangalore India'
     enabled: true
 
   - name: LinkedIn Jobs — AI ML Bangalore
@@ -156,7 +160,7 @@ search_queries:
 
   # -- iimjobs (senior/leadership India) --
   - name: iimjobs — Senior Data AI
-    query: 'site:iimjobs.com "Senior Data Engineer" OR "Staff Engineer" OR "AI Platform" OR "ML Engineer" Bangalore'
+    query: 'site:iimjobs.com "Senior Data Engineer" OR "AI Platform" OR "ML Engineer" Bangalore'
     enabled: true
 
   # -- Foundit (formerly Monster India) --
@@ -438,7 +442,7 @@ search_queries:
 
   # -- Naukri --
   - name: Naukri — Data Engineer India
-    query: 'site:naukri.com "Senior Data Engineer" OR "Staff Data Engineer" OR "Data Platform Engineer" Bangalore'
+    query: 'site:naukri.com "Senior Data Engineer" OR "Data Platform Engineer" Bangalore'
     enabled: true
 
   - name: Naukri — AI ML Engineer India
@@ -488,7 +492,7 @@ search_queries:
 
   # -- iimjobs (senior/premium India roles) --
   - name: iimjobs — Senior Data AI
-    query: 'site:iimjobs.com "Senior Data Engineer" OR "Staff Engineer" OR "AI Platform" OR "ML Engineer" Bangalore'
+    query: 'site:iimjobs.com "Senior Data Engineer" OR "AI Platform" OR "ML Engineer" Bangalore'
     enabled: true
 
   # -- Foundit (formerly Monster India) --

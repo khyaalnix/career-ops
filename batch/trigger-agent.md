@@ -73,7 +73,7 @@ Social signals (always run):
 For each result:
 
 KEEP if title contains any word from ROLES (case-insensitive partial match)
-SKIP if title contains: Junior, Intern, .NET, iOS, Android, PHP, Ruby, Blockchain, Web3, Crypto
+SKIP if title contains: Junior, Intern, .NET, iOS, Android, PHP, Ruby, Blockchain, Web3, Crypto, Staff Engineer, Staff Data Engineer, Principal Engineer, Principal Data Engineer, Distinguished Engineer, Engineering Manager, Director, VP of
 
 Location score:
   3 = title or snippet mentions CITY or COUNTRY

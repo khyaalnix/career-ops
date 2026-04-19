@@ -14,30 +14,30 @@ candidate:
 target_roles:
   primary:
     - "Senior Data Engineer"
-    - "Staff Data Engineer"
     - "AI Platform Engineer"
     - "Data Platform Engineer"
     - "AI Infrastructure Engineer"
-    - "Senior ML Engineer"
+    - "ML Engineer"
+    - "AI Engineer"
     - "SDE-2"
     - "SDE2"
     - "Software Development Engineer II"
     - "Software Engineer II"
   archetypes:
     - name: "Data Platform / Senior Data Engineer"
-      level: "Senior/Staff"
+      level: "Senior / SDE-2 (3yr exp)"
       fit: "primary"
     - name: "AI/ML Engineer"
-      level: "Senior/SDE-2+"
+      level: "Senior / SDE-2 (3yr exp)"
       fit: "primary"
     - name: "AI Platform / LLMOps Engineer"
-      level: "Senior/SDE-2+"
+      level: "Senior / SDE-2 (3yr exp)"
       fit: "primary"
     - name: "SDE-2 / Software Engineer II"
-      level: "SDE-2 and above"
+      level: "SDE-2"
       fit: "primary"
     - name: "Agentic AI / Distributed Systems Engineer"
-      level: "Senior/Staff"
+      level: "Senior IC"
       fit: "secondary"
     - name: "Backend / Infrastructure Engineer"
       level: "SDE-2+"
@@ -71,9 +71,10 @@ narrative:
       hero_metric: "42% fraud claim reduction for $250M+ logistics client"
 
 compensation:
-  target_range: "35-55 LPA"
+  target_range: "22+ LPA"          # backed by 3yr experience + PB-scale output
+  explicit_ask: "24 LPA"           # quote ONLY if form explicitly asks for a number
   currency: "INR"
-  minimum: "22 LPA"   # SDE-2+ roles acceptable if comp >22 LPA
+  minimum: "22 LPA"
   location_flexibility: "Bangalore preferred; open to remote; hybrid negotiable"
 
 location:
