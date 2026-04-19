@@ -10,6 +10,8 @@
     "pdf": "node generate-pdf.mjs",
     "sync-check": "node cv-sync-check.mjs",
     "digest": "node send-digest.mjs",
+    "apply": "node auto-apply.mjs",
+    "apply:dry": "node auto-apply.mjs --dry-run",
     "update:check": "node update-system.mjs check",
     "update": "node update-system.mjs apply",
     "rollback": "node update-system.mjs rollback"
